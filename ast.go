@@ -9,6 +9,8 @@ import (
 	"github.com/goptos/utils"
 )
 
+var verbose = (*utils.Verbose).New(nil)
+
 type TokenType = lexer.TokenType
 type Token = lexer.Token
 type Increment = lexer.Increment
@@ -81,7 +83,7 @@ func (_self *Ast) New(source string) (*Ast, error) {
 	if err != nil {
 		return nil, err
 	}
-	utils.Debug("::: ast create :::\n")
+	verbose.Printf(2, "::: ast create :::\n")
 	var t = *tokens
 	if t[0].T != lexer.OpenTag {
 		return nil, errors.New("not valid HTML file")
@@ -106,7 +108,7 @@ func (_self *Ast) New(source string) (*Ast, error) {
 
 func createNode(tokens *[]Token, index *int) (*ElemNode, error) {
 	var t = *tokens
-	utils.Debug("%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
+	verbose.Printf(2, "%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
 	var el = ElemNode{Name: t[*index].V, Children: make([]interface{}, 0)}
 	*index++
 
@@ -124,7 +126,7 @@ func createNode(tokens *[]Token, index *int) (*ElemNode, error) {
 			*index++
 		}
 		if n.T == lexer.Comp {
-			utils.Debug("%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
+			verbose.Printf(2, "%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
 			var args = []string{}
 			for *index+1 < len(t) {
 				if t[*index+1].T != lexer.Arg {
@@ -132,7 +134,7 @@ func createNode(tokens *[]Token, index *int) (*ElemNode, error) {
 				}
 				*index++
 				args = append(args, t[*index].V)
-				utils.Debug("%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
+				verbose.Printf(2, "%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
 			}
 			el.Children = append(el.Children,
 				Node[CompNode]{
@@ -143,7 +145,7 @@ func createNode(tokens *[]Token, index *int) (*ElemNode, error) {
 			*index++
 		}
 		if n.T == lexer.Attr {
-			utils.Debug("%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
+			verbose.Printf(2, "%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
 			for *index+1 < len(t) {
 				if t[*index+1].T == lexer.Quote || t[*index+1].T == lexer.Code {
 					*index++
@@ -152,7 +154,7 @@ func createNode(tokens *[]Token, index *int) (*ElemNode, error) {
 				return nil, fmt.Errorf("attr '%s' missing quote value (index %d)", n.V, *index)
 			}
 			var next = t[*index]
-			utils.Debug("%d\t%s\t%s\n", *index, next.T, next.V)
+			verbose.Printf(2, "%d\t%s\t%s\n", *index, next.T, next.V)
 			el.Children = append(el.Children,
 				Node[AttrNode]{
 					Type: n.T,
@@ -163,7 +165,7 @@ func createNode(tokens *[]Token, index *int) (*ElemNode, error) {
 			*index++
 		}
 		if n.T == lexer.EventAttr {
-			utils.Debug("%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
+			verbose.Printf(2, "%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
 			for *index+1 < len(t) {
 				if t[*index+1].T == lexer.Code {
 					*index++
@@ -172,7 +174,7 @@ func createNode(tokens *[]Token, index *int) (*ElemNode, error) {
 				return nil, fmt.Errorf("event attr '%s' missing code value (index %d)", n.V, *index)
 			}
 			var next = t[*index]
-			utils.Debug("%d\t%s\t%s\n", *index, next.T, next.V)
+			verbose.Printf(2, "%d\t%s\t%s\n", *index, next.T, next.V)
 			el.Children = append(el.Children,
 				Node[EventAttrNode]{
 					Type: n.T,
@@ -184,7 +186,7 @@ func createNode(tokens *[]Token, index *int) (*ElemNode, error) {
 			*index++
 		}
 		if n.T == lexer.Text {
-			utils.Debug("%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
+			verbose.Printf(2, "%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
 			el.Children = append(el.Children,
 				Node[TextNode]{
 					Type: n.T,
@@ -193,7 +195,7 @@ func createNode(tokens *[]Token, index *int) (*ElemNode, error) {
 			*index++
 		}
 		if n.T == lexer.Code {
-			utils.Debug("%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
+			verbose.Printf(2, "%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
 			el.Children = append(el.Children,
 				Node[DynTextNode]{
 					Type: n.T,
@@ -202,7 +204,7 @@ func createNode(tokens *[]Token, index *int) (*ElemNode, error) {
 			*index++
 		}
 		if n.T == lexer.CloseTag {
-			utils.Debug("%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
+			verbose.Printf(2, "%d\t%s\t%s\n", *index, t[*index].T, t[*index].V)
 			el.Children = append(el.Children,
 				Node[EndNode]{
 					Type: n.T,
@@ -217,43 +219,43 @@ func createNode(tokens *[]Token, index *int) (*ElemNode, error) {
 }
 
 func (_self *Ast) Process() {
-	utils.Debug("::: ast process :::\n")
+	verbose.Printf(1, "::: ast process :::\n")
 	_self.processR(_self.Root)
 }
 
 func printElemNode(node ElemNode) {
-	utils.Debug("%s\t%s\n",
+	verbose.Printf(1, "%s\t%s\n",
 		lexer.OpenTag,
 		node.Name)
 }
 
 func printCompNode(node CompNode) {
-	utils.Debug("%s\t%s\t%s\n",
+	verbose.Printf(1, "%s\t%s\t%s\n",
 		lexer.OpenTag,
 		node.Name,
 		strings.Join(node.Args, "\t"))
 }
 
 func printEndNode(node EndNode) {
-	utils.Debug("%s\t%s\n",
+	verbose.Printf(1, "%s\t%s\n",
 		lexer.CloseTag,
 		node.Name)
 }
 
 func printTextNode(node TextNode) {
-	utils.Debug("%s\t%s\n",
+	verbose.Printf(1, "%s\t%s\n",
 		lexer.Text,
 		node.Data)
 }
 
 func printDynTextNode(node DynTextNode) {
-	utils.Debug("%s\t%s\n",
+	verbose.Printf(1, "%s\t%s\n",
 		lexer.Code,
 		node.Effect)
 }
 
 func printAttrNode(node AttrNode) {
-	utils.Debug("%s\t%s\t%s\t%s\n",
+	verbose.Printf(1, "%s\t%s\t%s\t%s\n",
 		lexer.Attr,
 		node.Name,
 		node.Value,
@@ -261,7 +263,7 @@ func printAttrNode(node AttrNode) {
 }
 
 func printEventAttrNode(node EventAttrNode) {
-	utils.Debug("%s\t%s\t%s\t%s\t%s\n",
+	verbose.Printf(1, "%s\t%s\t%s\t%s\t%s\n",
 		lexer.EventAttr,
 		node.Name,
 		node.Event,
